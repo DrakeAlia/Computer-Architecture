@@ -7,6 +7,5 @@ from cpu import *
 
 cpu = CPU()
 
-# cpu.load(program)
 cpu.load()
 cpu.run()
