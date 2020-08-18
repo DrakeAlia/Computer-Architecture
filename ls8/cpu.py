@@ -1,88 +1,118 @@
-# setup consts for op codes
-LDI = 0b10000010  # LDI R0,8 130
-PRN = 0b01000111  # PRN R0, 71
-HLT = 0b00000001  # HLT
-MUL = 0b10100010  # Multiply
-ADD = 0b10100000  # Addition
-PUSH = 0b01000101
-POP = 0b01000110
-RET = 0b00010001
-CALL = 0b01010000
+"""CPU functionality."""
 
-
-SP = 7  # SP assign to be use R7 per spec
+import sys
 
 class CPU:
     """Main CPU class."""
+# Instructions consts for op codes
+
+# LDI = 0b10000010  # LDI R0,8 130
+# PRN = 0b01000111  # PRN R0, 71
+# HLT = 0b00000001  # HLT
+# MUL = 0b10100010  # Multiply
+# ADD = 0b10100000  # Addition
+# PUSH = 0b01000101
+# POP = 0b01000110
+# RET = 0b00010001
+# CALL = 0b01010000
+
+    # Instructions consts for op codes
+    ops = {
+        0x00: "NOP",   # no-op
+        0x01: "HLT",   # halt; exit
+        0x50: "CALL",  # call subroutine at register address
+        0x11: "RET",   # return from subroutine
+        0x52: "INT",   # interrupt
+        0x13: "IRET",  # return from interrupt
+        0x54: "JMP",   # jump to address in given reg
+        0x55: "JEQ",   # if == flag true, jump to address in given reg
+        0x56: "JNE",   # if E flag is clear, jump to address in given reg
+        0x57: "JGT",   # if >, jump to address in given reg
+        0x58: "JLT",   # if <
+        0x59: "JLE",   # if < or ==
+        0x5A: "JGE",   # if > or ==
+        0x82: "LDI",   # set value of register to integer
+        0x83: "LD",    # loads regA w/ value at mem address stored in regB
+        0x84: "ST",    # store value in regB at address in regA
+        0x45: "PUSH",  # push value in given reg onto stack
+        0x46: "POP",   # pop value at top of stack into given reg
+        0x47: "PRN",   # print numeric value stored in given reg
+        0x48: "PRA",   # print alpha char value stored in given reg
+        0xA0: "ADD",   # addition (ALU)
+        0xA1: "SUB",   # subtract (ALU)
+        0xA2: "MUL",   # multiply (ALU)
+        0xA3: "DIV",   # division (ALU)
+        0xA4: "MOD",   # modulo (ALU)
+        0x65: "INC",   # increment (ALU)
+        0x66: "DEC",   # decrement (ALU)
+        0xA7: "CMP",   # comparison (ALU)
+        0xA8: "AND",   # bitwise-and (ALU)
+        0x69: "NOT",   # bitwise-not (ALU)
+        0xAA: "OR",    # bitwise-or (ALU)
+        0xAB: "XOR",   # XOR (ALU)
+        0xAC: "SHL",   # bitshift left (ALU)
+        0xAD: "SHR",   # bitshift right (ALU)
+    }
 
     def __init__(self):
         """Construct a new CPU."""
-        # Step 1 creating a 256 byts of memory and
-        # 8 general-purpose registers also
-        # add PC program counter
-        
-        self.ram = [0] * 256  # create 256 bites memeory
-        self.reg = [0] * 8 # 8 bit register
-        self.pc = 0 # program counter PC
+        # pass
+        # Create a 256 byts of memory and 8 general-purpose registers
+        # Add PC program counter
 
-        # Step 2 add ram methods
+        # Create 256 bites memeory
+        self.ram = [0] * 256
+        # 8 bit register
+        self.reg = [0] * 8
+        # Program counter PC
+        self.pc = 0
+        self.dispatch = {
+        }
+
+        # Add ram methods
         # CPU contains two internal registers used for memory operation:
-        # they are: Memory Address Register(MAR) and Memeory Data Register(MDR)
+        # Memory Address Register(MAR) and Memeory Data Register(MDR)
         # MAR contains the address that is being read or written to
-        # MDR contains the data that was read or
-        # the data to write .
-        
-    # RAM_READ should accept  the address to read and
-    # return the value stored there.
-    def ram_read(self, mar):
-        return self.ram[mar]
+        # MDR contains the data that was read or the data to write
+    
+    # ram_read should accept the address to read and
+    # Return the value stored there
+    def ram_read(self, address):
+        return self.ram[address]
 
-    # RAM_WRITE should accept a value to write, and
-    # the address to write it to.
-    def ram_write(self, mar, mdr):
-        self.ram[mar] = mdr
+    # ram_write should accept a value to write and
+    # The address to write it to
+    def ram_write(self, value, address):
+        self.ram[address] = value
 
-    def load(self, filename):
+    def load(self):
         """Load a program into memory."""
 
-        try:
-            address = 0
+        address = 0
 
-            # open file with open()
-            with open(filename) as f:
-                for line in f:
-                    better_line = line.strip().split('#')  # strip the white space
-                    value = better_line[0].strip() # take the string number
+        # For now, we've just hardcoded a program:
 
-                    if value != '':
-                        # string to integer
-                        num = int(value, 2) # converting a binary string to a number
-                        self.ram[address] = num
-                        address += 1
-                    else:
-                        continue
-        
-        except FileExistsError:
-            print('ERRL file no found')
-            sys.exit(2)
+        program = [
+            # From print8.ls8
+            0b10000010, # LDI R0,8
+            0b00000000,
+            0b00001000,
+            0b01000111, # PRN R0
+            0b00000000,
+            0b00000001, # HLT
+        ]
 
+        for instruction in program:
+            self.ram[address] = instruction
+            address += 1
 
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-        
-        # Addition
+
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        # Sutraction
-        elif op == "SUB":
-            self.reg[reg_a] -= self.reg[reg_b]
-        # Multiplication
-        elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
-        # Division
-        elif op == "DIV":
-            self.reg[reg_a] /= self.reg[reg_b]
+        #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -106,106 +136,26 @@ class CPU:
 
         print()
 
-    def run(self, filename):
+    def run(self):
         """Run the CPU."""
-        # load the program into the memory
-        self.load(filename)
+        # pass
+        # Load the program into the memory
 
-        # run the program
-        while True:
-            # program counter
-            pc = self.pc
-            # Operation to start
-            op = self.ram_read(pc)
+        # Instruction register
+        ir = self.ram_read(self.pc)
 
-            # Instruction register
-            if op == LDI:
-                self.reg[self.ram_read(pc + 1)] = self.ram_read(pc + 2)
-                self.pc += 3
-            elif op == PRN:
-                print(self.reg[self.ram_read(pc + 1)])
-                self.pc +=2
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        operation = CPU.ops.get(ir)
 
-            # multiplication
-            elif  op == MUL:
-                # access 2 registers and mul
-                a = self.ram_read(pc + 1)
-                b = self.ram_read(pc + 2)
-                # call ALU
-                self.alu('MUL', a, b)
-                # move to prog counter
-                self.pc += 3
+        if operation is None:
+            return
+        elif operation == "HLT":
+            return
+        elif operation == "LDI":
+            self.reg[operand_a] = operand_b
+        elif operation == "PRN":
+            print(self.reg[operand_a])
 
-            # addition
-            elif op == ADD:
-                # access register and add them
-                a = self.ram_read(pc + 1)
-                b = self.ram_read(pc + 2)
-                # call the ALU
-                self.alu("ADD", a, b)
-                self.pc += 3
-
-            # system stack
-            elif op == PUSH:
-                # decremating
-                self.reg[SP] -= 1
-                # grab the current MA SP point to
-                stack_address = self.reg[SP]
-                # get a register number from the instruction
-                register_num = self.ram_read(pc + 1)
-                # get value out of the register
-                value = self.reg[register_num]
-                # werite the register value to a postition in the stack
-                self.ram_write(stack_address, value)
-                self.pc += 2
-
-            # system stack
-            elif op == POP:
-                # get the value from the memory
-                stack_value = self.ram_read(self.reg[SP])
-                # get the register number from instaruction in memory
-                register_num = self.ram_read(pc + 1)
-                # set the value of a register to the value held in the stack
-                self.reg[register_num] = stack_value
-                # increment SP
-                self.reg[SP] += 1 
-                self.pc += 2
-
-            # subroutine CALLS
-            elif op == CALL:
-                # decrement the SP
-                self.reg[SP] -= 1
-                # get the current MA that SP points to 
-                stack_address = self.reg[SP]
-                # get return MA
-                returned_address = pc + 2
-                # add return address to the stack
-                self.ram_write(stack_address, returned_address)
-                # set PC to the value in regirster
-                register_num = self.ram_read(pc + 1)
-                self.pc = self.reg[register_num]
-
-            elif op == RET:
-                # pop returnr MA off the stack
-                # store poped MA in the PC
-                self.pc = self.ram_read(self.reg[SP])
-                self.reg[SP] += 1
-
-            elif op == HLT:
-                sys.exit(1)
-
-            else:
-                print("ERR: Unknown input:\t", op)
-                sys.exit(1)
-if len(sys.argv) == 2:
-    filename = sys.argv[1]
-
-    c = CPU()
-    c.run(filename)
-else:
-    # err message
-    print("""ERR: PLEASE PROVIDE A FILE NAME\n
-    ex python cpu.py examples/FILENAME""")
-    sys.exit(2)
-            #`IR`: Instruction Register, contains a copy of the currently executing instruction
-#filename = 'examples/print8.ls8'
+        self.pc += (ir >> 6) + 1
+        self.run()
