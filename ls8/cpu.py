@@ -4,15 +4,6 @@ import sys
 
 class CPU:
     """Main CPU class."""
-# Instructions consts for op codes
-
- # LDI = 0b10000010  # LDI R0,8 130
- # PRN = 0b01000111  # PRN R0, 71
- # HLT = 0b00000001  # HLT
- # MUL = 0b10100010  # Multiply
- # ADD = 0b10100000  # Addition
- # PUSH = 0b01000101
- # POP = 0b01000110
 
     def __init__(self):
         """Construct a new CPU."""
@@ -21,25 +12,24 @@ class CPU:
     # Create a 256 byts of memory and 8 general-purpose registers
     # Add PC program counter
 
-        # Create 256 bites memeory
+        # Create 256 bites memory
         self.ram = [0b0] * 256
         # 8 bit register
         self.reg = [0] * 8
         # Program counter 
         self.pc = 0
-
-
         # reg 7 = 0xF4
         self.reg[7] = 0xF4
 
 
-    def load(self, filename=None):
+    def load(self):
         """Load a program into memory."""
 
         address = 0
         # For now, we've just hardcoded a program:
-
-        if filename:
+        # print(sys.argv)
+        if len (sys.argv) > 1:
+            filename = sys.argv[1]
             with open(
                 filename
                 # open('./examples/' + filename)
@@ -47,6 +37,7 @@ class CPU:
                 address = 0
                 for line in f:
                     value = line.split("#")[0].strip()
+                    # print(value)
                     if value == "":
                         continue
                     else:
@@ -118,16 +109,16 @@ class CPU:
         """Run the CPU."""
 
         # Instructions
-        HLT = 0b00000001
-        LDI = 0b10000010
-        PRN = 0b01000111
-        MUL = 0b10100010
-
-        ADD = 0b10100000
-        PUSH = 0b01000101
-        POP = 0b01000110
-        CALL = 0b01010000
-        RET = 0b00010001
+        HLT = 0b00000001 # Halt the CPU (and exit the emulator). 
+        LDI = 0b10000010 # Set the value of a register to an integer.
+        PRN = 0b01000111 # Print numeric value stored in the given register.
+        MUL = 0b10100010 # Multiply the values in two registers together and store the result in registerA.
+        ADD = 0b10100000  # Add the value in two registers and store the result in registerA.
+        PUSH = 0b01000101 # Push the value in the given register on the stack.
+        POP = 0b01000110 # Pop the value at the top of the stack into the given register.
+        CALL = 0b01010000 # Calls a subroutine (function) at the address stored in the register.
+        RET = 0b00010001 # Return from subroutine.
+        NOP = 0b00000000 # No operation. Do nothing for this instruction.
 
         SP = 7
 
@@ -140,20 +131,24 @@ class CPU:
             # Register 1
             operand_a = self.ram[self.pc + 1]
             # Register 2
-            operand_b = self.ram[self.pc + 2]  
+            operand_b = self.ram[self.pc + 2]
+
             # HLT
             if ir == HLT:
                 running = False
                 self.pc += 1
+
             # LDI
             elif ir == LDI:
                 self.reg[operand_a] = operand_b
                 # Increment program counter by 3 steps inside the RAM
                 self.pc += 3
+
             # PRN
             elif ir == PRN:
                 print(self.reg[operand_a])
                 self.pc += 2
+
             # MUL
             elif ir == MUL:
                 product = self.reg[operand_a] * self.reg[operand_b]
@@ -173,7 +168,7 @@ class CPU:
                 # Read value of SP and overwrite next register
                 value = self.ram_read(self.reg[SP])
                 self.reg[operand_a] = value
-                # increment SP
+                # Increment SP
                 self.reg[SP] += 1
                 self.pc += 2
 
@@ -182,6 +177,23 @@ class CPU:
                 add = self.reg[operand_a] + self.reg[operand_b]
                 self.reg[operand_a] = add
                 self.pc += 3
+
+            # NOP
+            elif ir == NOP:
+                # Do nothing and procced to the next instruction
+                self.pc += 1
+                continue
+
+            # CALL 
+            elif ir == CALL:
+                self.reg[SP] -= 1
+                self.ram_write(self.pc + 2, self.reg[SP])
+                self.pc = self.reg[operand_a]
+
+            # RET
+            elif ir == RET:
+                self.pc = self.ram[self.reg[SP]]
+                self.reg[SP] += 1
 
             # Unknown instructions
             else:
