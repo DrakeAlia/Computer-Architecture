@@ -119,6 +119,10 @@ class CPU:
         CALL = 0b01010000 # Calls a subroutine (function) at the address stored in the register.
         RET = 0b00010001 # Return from subroutine.
         NOP = 0b00000000 # No operation. Do nothing for this instruction.
+        CMP = 0b10100111
+        JMP = 0b01010100
+        JEQ = 0b01010101
+        JNE = 0b01010110
 
         SP = 7
 
@@ -194,6 +198,32 @@ class CPU:
             elif ir == RET:
                 self.pc = self.ram[self.reg[SP]]
                 self.reg[SP] += 1
+
+            # CMP
+            elif ir == CMP:
+                self.alu("CMP", operand_a, operand_b)
+                self.pc += 3
+
+            # JMP
+            elif ir == JMP:
+                self.pc == self.reg[operand_a]
+                break
+
+            # JEQ
+            elif ir == JEQ:
+                if (self.flag & HLT) == 1:
+                    self.pc = self.reg[operand_a]
+
+                else:
+                    self.pc += 2
+
+            # JNE
+            elif ir == JNE:
+                if (self.flag & HLT) == 0:
+                    self.pc = self.reg[operand_a]
+
+                else:
+                    self.pc += 2
 
             # Unknown instructions
             else:
