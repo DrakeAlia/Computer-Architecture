@@ -18,8 +18,9 @@ class CPU:
         self.reg = [0] * 8
         # Program counter 
         self.pc = 0
-        # reg 7 = 0xF4
-        self.reg[7] = 0xF4
+        # Register 7 = 0xF4
+        # self.reg[7] = 0xF4
+        self.reg[7] = 255
 
 
     def load(self):
